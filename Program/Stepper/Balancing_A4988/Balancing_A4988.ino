@@ -9,17 +9,22 @@
 
 SoftwareSerial blutut(A1, A0);
 Servo RDS, SG;
+uint8_t stateRDS, stateSG, stateGrip;
+float offsetServo;
 
-#define Gripper_Naik      RDS.write(0);
-#define Gripper_Turun     RDS.write(60);
-#define Gripper_Capit     SG.write(60);
-#define Gripper_Buka      SG.write(100);
+#define Gripper_Naik      { RDS.write(0); stateRDS = 1; }
+#define Gripper_Turun     { RDS.write(60); stateRDS = 0; }
+#define Gripper_Capit     { SG.write(60); stateSG = 1; }
+#define Gripper_Buka      { SG.write(100); stateSG = 0; }
+#define Ambil_Objek       { Gripper_Capit; offsetServo = 14.0; delay(100); Gripper_Naik; offsetServo = 7.0; stateGrip = 1; }
+#define Taruh_Objek       { Gripper_Turun; offsetServo = 14.0; stateGrip = 2; }
+#define Lepas_Objek       { Gripper_Buka; stateGrip = 3; }
 
 float Kp = 20;
 float Ki = 3;
 float Kd = 9;
 float Rotate_Speed = 200;
-float Max_Speed = 500;
+float Max_Speed = 600;
 
 int left_motor, right_motor;
 int Left_Motor_Speed, Right_Motor_Speed;
@@ -48,7 +53,7 @@ void dmpDataReady() {
 float Pitch = 0;
 
 char cmd;
-float offset, offsetServo;
+float offset;
 
 void setup() {
   Serial.begin(115200);
@@ -73,7 +78,11 @@ void setup() {
   OCR2A = 39;               //Compare register is 39, so...   20us/(1s/(16MHz/8))-1
   TCCR2A |= (1 << WGM21);   //Mode: Clear timer (TCNT) on compare (CTC)
 
-  offsetServo = 8.5; // - kedepan
+  offsetServo = -2.0;
+  // -2 tanpa pipa
+  // 6 pipa diatas
+  // 12 pipa dibawah
+
   BuzzTit(10);
 
   Loop_Time = micros() + 4000; //Loop time is 4000us
@@ -93,10 +102,38 @@ void loop() {
     calculateSpeed();
   }
 
-  if (cmd == 'G') Gripper_Naik;
-  if (cmd == 'R') Gripper_Turun;
-  if (cmd == 'I') Gripper_Capit;
-  if (cmd == 'J') Gripper_Buka;
+  if (cmd == 'G') {
+    if (!stateRDS) {
+      Gripper_Naik;
+    }
+    else Gripper_Turun;
+    delay(100);
+  }
+  if (cmd == 'R') {
+    if (!stateSG) {
+      Gripper_Capit;
+    }
+    else Gripper_Buka;
+    delay(100);
+  }
+  if (cmd == 'I') Ambil_Objek;
+  if (cmd == 'J') {
+    if (stateGrip == 1) {
+      Taruh_Objek;
+    } else if (stateGrip == 2) {
+      Lepas_Objek;
+    }
+    else ;
+    delay(100);
+  }
+
+  if (stateGrip == 3) {
+    if (offsetServo < -2) {
+      offsetServo = -2;
+      stateGrip = 0;
+    }
+    else offsetServo -= 0.1;
+  }
 
   while (Loop_Time > micros());
   Loop_Time += 4000;
@@ -156,7 +193,7 @@ void calculateSpeed() {
 
   receiveCmd();
 
-  
+
   if (cmd == 'D') {
     PID_Value_left  += Rotate_Speed;
     PID_Value_right -= Rotate_Speed;
@@ -166,20 +203,20 @@ void calculateSpeed() {
     PID_Value_right += Rotate_Speed;
   }
   else if (cmd == 'S') {
-    if (offset > 10.0) offset = 10.0;
-    else offset += 0.5;
+    if (offset > 7.5) offset = 7.5;
+    else offset += 0.25;
   }
   else if (cmd == 'W') {
-    if (offset < -10.0) offset = -10.0;
-    else offset -= 0.5;
+    if (offset < -7.5) offset = -7.5;
+    else offset -= 0.25;
   }
   else {
     if (offset > 0) {
-      offset -= 1;
+      offset -= 0.25;
       if (offset < 0) offset = 0.0;
     }
     if (offset < 0) {
-      offset += 1;
+      offset += 0.25;
       if (offset > 0) offset = 0.0;
     }
   }

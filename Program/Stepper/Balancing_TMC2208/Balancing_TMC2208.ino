@@ -102,6 +102,8 @@ void loop() {
     calculateSpeed();
   }
 
+  Serial.println(cmd);
+
   if (cmd == 'G') {
     if (!stateRDS) {
       Gripper_Naik;
@@ -166,7 +168,6 @@ void initIMU() {
 void receiveCmd() {
   if (blutut.available() > 0) {
     cmd = blutut.read();
-    //    Serial.println(cmd);
   }
 }
 
@@ -203,20 +204,20 @@ void calculateSpeed() {
     PID_Value_right += Rotate_Speed;
   }
   else if (cmd == 'S') {
-    if (offset > 7.5) offset = 7.5;
-    else offset += 0.25;
+    if (offset > 9.5) offset = 9.5;
+    else offset += 0.5;
   }
   else if (cmd == 'W') {
-    if (offset < -7.5) offset = -7.5;
-    else offset -= 0.25;
+    if (offset < -9.5) offset = -9.5;
+    else offset -= 0.5;
   }
   else {
     if (offset > 0) {
-      offset -= 0.25;
+      offset -= 0.5;
       if (offset < 0) offset = 0.0;
     }
     if (offset < 0) {
-      offset += 0.25;
+      offset += 0.5;
       if (offset > 0) offset = 0.0;
     }
   }

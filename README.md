@@ -1,6 +1,7 @@
 # Self-Balancing-Robot
 
 The self-balancing robot is equipped with a remote on a mobile phone that can be used to control the movement of the robot and the gripper.
+
 This self-balancing robot was developed in the robotics project course in Mechatronic Engineering - EEPIS
 
 Course lecturer : Eko Henfri Binugroho, S.ST., M. Eng.
